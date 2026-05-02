@@ -1,8 +1,7 @@
-import unittest
+﻿import unittest
 import sys
 import os
 sys.path.insert(0, os.path.abspath('.'))
-
 from app import predict_house_price, app
 
 class TestHousePricePredictor(unittest.TestCase):
@@ -10,8 +9,8 @@ class TestHousePricePredictor(unittest.TestCase):
     def test_predict_house_price_normal(self):
         """Test normal house price prediction"""
         price = predict_house_price(2000, 3, 5)
-        self.assertGreater(price, 50000)
-        self.assertEqual(price, 50000 + (2000*300) + (3*15000) - (5*1000))
+        expected = 50000 + (2000*300) + (3*15000) - (5*1000)
+        self.assertEqual(price, expected)
     
     def test_predict_house_price_minimum(self):
         """Test minimum price constraint"""
@@ -38,7 +37,8 @@ class TestHousePricePredictor(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             data = response.get_json()
             self.assertTrue(data['success'])
-            self.assertEqual(data['prediction'], 50000 + (2000*300) + (3*15000) - (5*1000))
+            expected = 50000 + (2000*300) + (3*15000) - (5*1000)
+            self.assertEqual(data['prediction'], expected)
 
 if __name__ == '__main__':
     unittest.main()
