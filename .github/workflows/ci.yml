@@ -1,0 +1,96 @@
+name: CI - Continuous Integration
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Create virtual environment
+      run: |
+        python -m venv venv
+        source venv/bin/activate
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    
+    - name: Lint with flake8
+      run: |
+        source venv/bin/activate
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    
+    - name: Create unit tests
+      run: |
+        mkdir -p tests
+        cat > tests/test_app.py << 'EOF'
+import sys
+import os
+sys.path.insert(0, os.path.abspath('.'))
+
+import unittest
+from app import predict_house_price, app
+
+class TestHousePricePredictor(unittest.TestCase):
+    
+    def test_predict_house_price_normal(self):
+        price = predict_house_price(2000, 3, 5)
+        self.assertGreater(price, 50000)
+        self.assertEqual(price, 50000 + (2000*300) + (3*15000) - (5*1000))
+    
+    def test_predict_house_price_minimum(self):
+        price = predict_house_price(0, 0, 100)
+        self.assertGreaterEqual(price, 50000)
+    
+    def test_predict_house_price_large_area(self):
+        price = predict_house_price(5000, 5, 10)
+        self.assertGreater(price, 500000)
+    
+    def test_app_health_endpoint(self):
+        with app.test_client() as client:
+            response = client.get('/health')
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(b'healthy', response.data)
+    
+    def test_api_predict_endpoint(self):
+        with app.test_client() as client:
+            response = client.post('/api/predict', 
+                                 json={'area': 2000, 'bedrooms': 3, 'age': 5})
+            self.assertEqual(response.status_code, 200)
+            data = response.get_json()
+            self.assertTrue(data['success'])
+            self.assertEqual(data['prediction'], 50000 + (2000*300) + (3*15000) - (5*1000))
+
+if __name__ == '__main__':
+    unittest.main()
+EOF
+    
+    - name: Run unit tests
+      run: |
+        source venv/bin/activate
+        python -m pytest tests/ -v
+    
+    - name: Verify Flask app structure
+      run: |
+        test -f app.py && echo "✅ app.py exists"
+        test -f requirements.txt && echo "✅ requirements.txt exists"
