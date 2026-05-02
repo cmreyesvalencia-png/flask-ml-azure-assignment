@@ -92,5 +92,20 @@ def api_predict():
 def health():
     return jsonify({'status': 'healthy', 'service': 'house-price-predictor'})
 
+# ==============================================
+# NEW ENDPOINT ADDED FOR CI/CD VERIFICATION
+# ==============================================
+@app.route('/cd-status')
+def cd_status():
+    """Endpoint to verify CI/CD pipeline deployment"""
+    return {
+        'status': 'deployed',
+        'pipeline': 'GitHub Actions CI/CD',
+        'auto_deployment': 'enabled',
+        'app_name': 'flask-houseprice-8580',
+        'last_update': '2026-05-02',
+        'version': '2.0'
+    }
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
