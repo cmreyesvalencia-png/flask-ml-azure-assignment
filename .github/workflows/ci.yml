@@ -25,4 +25,4 @@ jobs:
     
     - name: Run tests
       run: |
-        python -m pytest tests/test_app.py -v --tb=longtb=long
+        python -m pytest tests/test_app.py -v --tb=long
